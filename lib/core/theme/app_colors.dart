@@ -6,8 +6,8 @@ class AppColors {
   static const Color surfaceSunken = Color(0xFFEFE5D2);
 
   static const Color ink = Color(0xFF2B2A1F);
-  static const Color inkSecondary = Color(0xFF6B6656);
-  static const Color inkTertiary = Color(0xFFA39E8C);
+  static const Color inkSecondary = Color(0xFF696454);
+  static const Color inkTertiary = Color(0xFF77725F);
   static const Color line = Color(0xFFE6DDCB);
 
   static const Color primary = Color(0xFF55752A);

@@ -65,7 +65,7 @@ class ReviewCard extends StatelessWidget {
                       Text(
                         Utils.formatDate(date),
                         style: textTheme.bodySmall!.copyWith(
-                          color: AppColors.inkTertiary,
+                          color: AppColors.inkSecondary,
                         ),
                       ),
                   ],

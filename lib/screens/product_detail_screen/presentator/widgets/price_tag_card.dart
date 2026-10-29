@@ -71,9 +71,9 @@ class PriceTagCard extends StatelessWidget {
                           child: Text(
                             Utils.formatPrice(product.price),
                             style: textTheme.bodyLarge!.copyWith(
-                              color: AppColors.inkTertiary,
+                              color: AppColors.inkSecondary,
                               decoration: TextDecoration.lineThrough,
-                              decorationColor: AppColors.inkTertiary,
+                              decorationColor: AppColors.inkSecondary,
                             ),
                           ),
                         ),

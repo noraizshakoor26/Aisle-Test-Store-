@@ -61,7 +61,7 @@ class BentoTile extends StatelessWidget {
                   trailing!,
                   textAlign: TextAlign.right,
                   style: textTheme.bodySmall!.copyWith(
-                    color: AppColors.inkTertiary,
+                    color: AppColors.inkSecondary,
                   ),
                 ),
               ],
