@@ -38,12 +38,16 @@ class ShowcaseCard extends StatelessWidget {
           Container(
             width: width - 16,
             height: width - 16,
-            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: tint,
               borderRadius: BorderRadius.circular(kRadiusSmall),
             ),
-            child: AisleNetworkImage(url: imageUrl, cacheWidth: 400),
+            child: AisleNetworkImage(
+              url: imageUrl,
+              cacheWidth: 400,
+              padding: const EdgeInsets.all(16),
+              radius: kRadiusSmall,
+            ),
           ),
           const SizedBox(height: 12),
           Padding(
