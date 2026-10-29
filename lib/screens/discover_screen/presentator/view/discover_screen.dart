@@ -5,12 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:test_store/core/enums/status_indicator.dart';
 import 'package:test_store/core/models/user_session.dart';
+import 'package:test_store/core/services/navigator_service.dart';
 import 'package:test_store/core/services/secure_storage_service.dart';
 import 'package:test_store/core/theme/app_colors.dart';
 import 'package:test_store/core/utils/constants.dart';
 import 'package:test_store/core/utils/utils.dart';
 import 'package:test_store/core/widgets/aisle_chip.dart';
 import 'package:test_store/core/widgets/aisle_state_block.dart';
+import 'package:test_store/screens/discover_screen/data/models/product_model.dart';
 import 'package:test_store/screens/discover_screen/presentator/bloc/discover_bloc.dart';
 import 'package:test_store/screens/discover_screen/presentator/widgets/category_strip.dart';
 import 'package:test_store/screens/discover_screen/presentator/widgets/deals_strip.dart';
@@ -21,6 +23,7 @@ import 'package:test_store/screens/discover_screen/presentator/widgets/list_foot
 import 'package:test_store/screens/discover_screen/presentator/widgets/product_grid_sliver.dart';
 import 'package:test_store/screens/discover_screen/presentator/widgets/search_field.dart';
 import 'package:test_store/screens/discover_screen/presentator/widgets/section_header.dart';
+import 'package:test_store/screens/product_detail_screen/presentator/view/product_detail_screen.dart';
 import 'package:test_store/screens/route_screen/presentator/bloc/route_bloc.dart';
 
 class DiscoverScreen extends StatefulWidget {
@@ -102,6 +105,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     return completer.future;
   }
 
+  void _openProduct(ProductModel product, String heroTag) {
+    FocusScope.of(context).unfocus();
+    HapticFeedback.lightImpact();
+    NavigatorService().push(
+      ProductDetailScreen(product: product, heroTag: heroTag),
+    );
+  }
+
   void _signOut() {
     context.read<RouteBloc>().add(RouteSignedOut());
   }
@@ -127,7 +138,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           AisleStateBlock(
             icon: Icons.cloud_off_rounded,
             title: "Couldn't load products",
-            message: state.errorMessage ?? 'Check your connection and try again.',
+            message:
+                state.errorMessage ?? 'Check your connection and try again.',
             actionLabel: 'Try again',
             onAction: () => context.read<DiscoverBloc>().add(DiscoverRetried()),
           ),
@@ -159,7 +171,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
 
     return [
-      ProductGridSliver(products: state.products, isLoading: isLoading),
+      ProductGridSliver(
+        products: state.products,
+        isLoading: isLoading,
+        onProductTap: (product) => _openProduct(product, 'grid-${product.id}'),
+      ),
       if (!isLoading)
         SliverToBoxAdapter(
           child: ListFooter(
@@ -197,7 +213,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           listener: (context, state) {
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(content: Text(state.noticeMessage ?? '')));
+              ..showSnackBar(
+                SnackBar(content: Text(state.noticeMessage ?? '')),
+              );
           },
           builder: (context, state) {
             final header = DiscoverHeaderDelegate(
@@ -268,6 +286,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     child: DealsStrip(
                       deals: state.deals,
                       status: state.dealsStatus,
+                      onDealTap: (product) =>
+                          _openProduct(product, 'deal-${product.id}'),
                       onRetry: () =>
                           context.read<DiscoverBloc>().add(DiscoverRetried()),
                     ),

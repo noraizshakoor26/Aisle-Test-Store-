@@ -19,7 +19,9 @@ class AisleRatingStars extends StatelessWidget {
             Icon(
               Icons.star_rounded,
               size: size,
-              color: filled ? AppColors.star : AppColors.surfaceSunken,
+              color: filled
+                  ? AppColors.star
+                  : AppColors.inkTertiary.withValues(alpha: 0.35),
             ),
             if (half)
               Icon(Icons.star_half_rounded, size: size, color: AppColors.star),

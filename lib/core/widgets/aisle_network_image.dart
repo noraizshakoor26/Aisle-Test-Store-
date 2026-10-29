@@ -13,6 +13,7 @@ class AisleNetworkImage extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.radius = 0,
     this.cacheWidth,
+    this.showSkeleton = true,
   });
 
   final String url;
@@ -20,6 +21,7 @@ class AisleNetworkImage extends StatelessWidget {
   final EdgeInsets padding;
   final double radius;
   final int? cacheWidth;
+  final bool showSkeleton;
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +35,9 @@ class AisleNetworkImage extends StatelessWidget {
         padding: padding,
         child: Image(image: imageProvider, fit: fit),
       ),
-      placeholder: (context, url) =>
-          AisleShimmer(child: AisleSkeletonBox(radius: radius)),
+      placeholder: (context, url) => showSkeleton
+          ? AisleShimmer(child: AisleSkeletonBox(radius: radius))
+          : const SizedBox.shrink(),
       errorWidget: (context, url, error) => const Center(
         child: Icon(
           Icons.image_not_supported_outlined,
