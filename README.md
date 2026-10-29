@@ -70,7 +70,7 @@ The detail screen has no data layer. It receives the product already loaded in t
 ### Session and token storage
 
 - **Storage:** tokens are kept with `flutter_secure_storage`, which uses the iOS Keychain and Keystore-backed encryption on Android. They are never kept in plain preferences.
-- **On launch:** the saved token is checked with `GET /auth/me`. A 401 clears the session and returns to Welcome. If the phone is merely offline, the user still gets in and the list shows its own offline state.
+- **On launch:** the saved token is checked with `GET /auth/me`. Any HTTP rejection clears the session and returns to Welcome: DummyJSON answers 401 for an expired token but 500 for a malformed one. Only when the server can't be reached (offline or timeout) does the user still get in, and the list then shows its own offline state.
 - **Not implemented: token refresh.** DummyJSON tokens last 60 minutes; after that, the next launch asks the user to sign in again. A refresh-token flow (`POST /auth/refresh`) is the natural next step.
 
 ## Design and UX decisions

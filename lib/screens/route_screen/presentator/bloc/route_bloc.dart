@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:test_store/core/api/failures.dart';
 import 'package:test_store/core/enums/status_indicator.dart';
 import 'package:test_store/core/services/navigator_service.dart';
 import 'package:test_store/core/services/secure_storage_service.dart';
@@ -38,13 +37,16 @@ class RouteBloc extends Bloc<RouteEvent, RouteState> {
     }
 
     final result = await GetMeUseCase(RouteRemoteRepoImpl()).execute();
-    final isExpired = result.isFailure && result.failure is UnauthorizedFailure;
-    if (isExpired) {
+    // Any HTTP answer other than 200 means the token is unusable: DummyJSON
+    // returns 401 for expired tokens but 500 for malformed ones. Only failures
+    // without a status code (offline, timeout) keep the saved session.
+    final isRejected = result.isFailure && result.failure?.statusCode != null;
+    if (isRejected) {
       await SecureStorageService().clearUserSession();
     }
     emit(state.copyWith(status: StatusIndicator.active));
     NavigatorService().pushAndRemoveUntil(
-      isExpired ? const WelcomeScreen() : const DiscoverScreen(),
+      isRejected ? const WelcomeScreen() : const DiscoverScreen(),
       fade: true,
     );
   }
