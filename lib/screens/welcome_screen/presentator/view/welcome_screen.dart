@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:test_store/core/services/navigator_service.dart';
 import 'package:test_store/core/theme/app_colors.dart';
 import 'package:test_store/core/utils/constants.dart';
 import 'package:test_store/core/widgets/aisle_primary_button.dart';
 import 'package:test_store/core/widgets/aisle_wordmark.dart';
+import 'package:test_store/screens/sign_in_screen/presentator/view/sign_in_screen.dart';
 import 'package:test_store/screens/welcome_screen/presentator/widgets/showcase_wall.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -46,7 +48,8 @@ class WelcomeScreen extends StatelessWidget {
                     AislePrimaryButton(
                       label: 'Get started',
                       trailingIcon: Icons.arrow_forward_rounded,
-                      onPressed: () {},
+                      onPressed: () =>
+                          NavigatorService().push(const SignInScreen()),
                     ),
                   ],
                 ),

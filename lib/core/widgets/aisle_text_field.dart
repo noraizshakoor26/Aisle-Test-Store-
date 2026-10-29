@@ -104,6 +104,7 @@ class _AisleTextFieldState extends State<AisleTextField> {
                   autofillHints: widget.autofillHints,
                   onChanged: widget.onChanged,
                   onSubmitted: widget.onSubmitted,
+                  scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
                   autocorrect: false,
                   enableSuggestions: !widget.isPassword,
                   style: textTheme.bodyLarge,
