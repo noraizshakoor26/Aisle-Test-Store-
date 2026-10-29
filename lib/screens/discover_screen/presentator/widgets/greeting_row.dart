@@ -7,13 +7,13 @@ class GreetingRow extends StatelessWidget {
     super.key,
     required this.greeting,
     required this.name,
-    required this.imageUrl,
+    required this.initials,
     required this.onSignOut,
   });
 
   final String greeting;
   final String name;
-  final String imageUrl;
+  final String initials;
   final VoidCallback onSignOut;
 
   @override
@@ -46,7 +46,7 @@ class GreetingRow extends StatelessWidget {
             ],
           ),
         ),
-        AvatarMenu(imageUrl: imageUrl, onSignOut: onSignOut),
+        AvatarMenu(initials: initials, onSignOut: onSignOut),
       ],
     );
   }

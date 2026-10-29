@@ -117,6 +117,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     context.read<RouteBloc>().add(RouteSignedOut());
   }
 
+  String get _initials => [_session?.firstName, _session?.lastName]
+      .whereType<String>()
+      .where((name) => name.isNotEmpty)
+      .map((name) => name[0].toUpperCase())
+      .join();
+
   String _gridTitle(DiscoverState state) {
     if (state.query.isNotEmpty) return 'Results for "${state.query}"';
     final slug = state.selectedCategory;
@@ -223,7 +229,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               greeting: GreetingRow(
                 greeting: Utils.greeting(DateTime.now()),
                 name: _session?.firstName ?? '',
-                imageUrl: _session?.image ?? '',
+                initials: _initials,
                 onSignOut: _signOut,
               ),
               search: SearchField(
