@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:test_store/core/services/navigator_service.dart';
 import 'package:test_store/core/theme/app_theme.dart';
+import 'package:test_store/screens/discover_screen/data/repository/discover_remote_repo_impl.dart';
+import 'package:test_store/screens/discover_screen/presentator/bloc/discover_bloc.dart';
 import 'package:test_store/screens/route_screen/presentator/bloc/route_bloc.dart';
 import 'package:test_store/screens/route_screen/presentator/view/route_screen.dart';
 import 'package:test_store/screens/sign_in_screen/presentator/bloc/sign_in_bloc.dart';
@@ -28,6 +30,10 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (context) => RouteBloc()),
         BlocProvider(create: (context) => SignInBloc()),
+        BlocProvider(
+          create: (context) =>
+              DiscoverBloc(repository: DiscoverRemoteRepoImpl()),
+        ),
       ],
       child: MaterialApp(
         navigatorKey: NavigatorService().navigatorKey,
