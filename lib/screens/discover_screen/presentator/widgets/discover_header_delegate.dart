@@ -8,12 +8,14 @@ import 'package:test_store/screens/discover_screen/presentator/widgets/hero_caro
 class DiscoverHeaderDelegate extends SliverPersistentHeaderDelegate {
   DiscoverHeaderDelegate({
     required this.topPadding,
+    required this.searchProgress,
     required this.greeting,
     required this.search,
     required this.hero,
   });
 
   final double topPadding;
+  final double searchProgress;
   final Widget greeting;
   final Widget search;
   final Widget hero;
@@ -22,20 +24,25 @@ class DiscoverHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   double get _searchTop => topPadding + 12 + _greetingHeight + 16;
   double get _heroTop => _searchTop + kControlHeight + 24;
+  double get _fullExtent => _heroTop + HeroCarousel.height + 32;
 
   @override
   double get minExtent => topPadding + 12 + kControlHeight + 12;
 
   @override
-  double get maxExtent => _heroTop + HeroCarousel.height + 32;
+  double get maxExtent =>
+      _fullExtent - (_fullExtent - minExtent) * searchProgress;
 
   @override
   Widget build(
     BuildContext context,
-    double shrinkOffset,
+    double scrollOffset,
     bool overlapsContent,
   ) {
-    final progress = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
+    // Search mode lowers maxExtent; adding the height it removed back as a
+    // virtual scroll offset makes the contents collapse exactly as on scroll.
+    final shrinkOffset = scrollOffset + (_fullExtent - maxExtent);
+    final progress = (shrinkOffset / (_fullExtent - minExtent)).clamp(0.0, 1.0);
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(

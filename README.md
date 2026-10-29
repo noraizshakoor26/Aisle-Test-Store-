@@ -39,6 +39,7 @@ flutter build apk --release
 | Empty | A friendly message instead of a blank screen | The user knows it's empty, not broken |
 | Pull to refresh | The current list stays visible until the new one arrives | No flash of an empty screen |
 | Pagination | 20 products at a time, the next 20 load on their own near the bottom, and a note at the very end | Fast first load, no "load more" button, no endless spinner |
+| Search | Tapping the search bar folds the header and sections away, so results appear right under it. Cancel, × or the phone's back button brings everything back | Results are never hidden below the fold, and leaving search returns the user exactly where they were |
 
 ## 3. Detail page
 

@@ -33,18 +33,33 @@ class DiscoverScreen extends StatefulWidget {
   State<DiscoverScreen> createState() => _DiscoverScreenState();
 }
 
-class _DiscoverScreenState extends State<DiscoverScreen> {
+class _DiscoverScreenState extends State<DiscoverScreen>
+    with SingleTickerProviderStateMixin {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
   final _refreshKey = GlobalKey<RefreshIndicatorState>();
+  late final AnimationController _searchModeController = AnimationController(
+    vsync: this,
+    duration: kNavigationDuration,
+  );
+  late final Animation<double> _searchMode = CurvedAnimation(
+    parent: _searchModeController,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
+  late final Animation<double> _browseSections = ReverseAnimation(_searchMode);
   Timer? _searchDebounce;
   UserSession? _session;
+  bool _isSearching = false;
+  String? _categoryBeforeSearch;
 
   @override
   void initState() {
     super.initState();
     context.read<DiscoverBloc>().add(DiscoverStarted());
     _scrollController.addListener(_onScroll);
+    _searchFocus.addListener(_onSearchFocusChanged);
     _loadSession();
   }
 
@@ -53,6 +68,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     _searchDebounce?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
+    _searchFocus.dispose();
+    _searchModeController.dispose();
     super.dispose();
   }
 
@@ -84,10 +101,36 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     context.read<DiscoverBloc>().add(DiscoverSearchChanged(query));
   }
 
-  void _clearSearch() {
+  void _onSearchFocusChanged() {
+    if (!_searchFocus.hasFocus || _isSearching) return;
+    _categoryBeforeSearch = context.read<DiscoverBloc>().state.selectedCategory;
+    setState(() => _isSearching = true);
+    _searchModeController.forward();
+    _scrollToTop();
+  }
+
+  // Leaving search is always explicit (Cancel, ×, Clear search, back), so a
+  // scroll that dismisses the keyboard never yanks the page back to the top.
+  void _exitSearch() {
+    if (!mounted || !_isSearching) return;
     _searchDebounce?.cancel();
     _searchController.clear();
-    context.read<DiscoverBloc>().add(DiscoverSearchChanged(''));
+    _searchFocus.unfocus();
+    setState(() => _isSearching = false);
+    _searchModeController.reverse();
+    _scrollToTop();
+    context.read<DiscoverBloc>().add(
+      DiscoverCategorySelected(_categoryBeforeSearch),
+    );
+  }
+
+  void _scrollToTop() {
+    if (!_scrollController.hasClients || _scrollController.offset == 0) return;
+    _scrollController.animateTo(
+      0,
+      duration: kNavigationDuration,
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _selectCategory(String? slug) {
@@ -162,7 +205,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   title: 'No matches for "${state.query}"',
                   message: 'Try a different word or browse a category.',
                   actionLabel: 'Clear search',
-                  onAction: _clearSearch,
+                  onAction: _exitSearch,
                 )
               : AisleStateBlock(
                   icon: Icons.shopping_bag_outlined,
@@ -212,115 +255,147 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        body: BlocConsumer<DiscoverBloc, DiscoverState>(
-          listenWhen: (previous, current) =>
-              previous.noticeId != current.noticeId,
-          listener: (context, state) {
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(
-                SnackBar(content: Text(state.noticeMessage ?? '')),
-              );
-          },
-          builder: (context, state) {
-            final header = DiscoverHeaderDelegate(
-              topPadding: padding.top,
-              greeting: GreetingRow(
-                greeting: Utils.greeting(DateTime.now()),
-                name: _session?.firstName ?? '',
-                initials: _initials,
-                onSignOut: _signOut,
-              ),
-              search: SearchField(
-                controller: _searchController,
-                onChanged: _onSearchChanged,
-                onSubmitted: _onSearchSubmitted,
-                onClear: _clearSearch,
-              ),
-              hero: HeroCarousel(onSlideTap: _selectCategory),
-            );
+      child: PopScope(
+        canPop: !_isSearching,
+        // Back only closes search here; the route itself is never popped from
+        // this callback, which is what crashes with a double pop on Android.
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          _exitSearch();
+        },
+        child: Scaffold(
+          body: BlocConsumer<DiscoverBloc, DiscoverState>(
+            listenWhen: (previous, current) =>
+                previous.noticeId != current.noticeId,
+            listener: (context, state) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(content: Text(state.noticeMessage ?? '')),
+                );
+            },
+            builder: (context, state) => AnimatedBuilder(
+              animation: _searchMode,
+              builder: (context, _) {
+                final header = DiscoverHeaderDelegate(
+                  topPadding: padding.top,
+                  searchProgress: _searchMode.value,
+                  greeting: GreetingRow(
+                    greeting: Utils.greeting(DateTime.now()),
+                    name: _session?.firstName ?? '',
+                    initials: _initials,
+                    onSignOut: _signOut,
+                  ),
+                  search: SearchField(
+                    controller: _searchController,
+                    focusNode: _searchFocus,
+                    cancelAnimation: _searchMode,
+                    onChanged: _onSearchChanged,
+                    onSubmitted: _onSearchSubmitted,
+                    onClear: _exitSearch,
+                    onCancel: _exitSearch,
+                  ),
+                  hero: HeroCarousel(onSlideTap: _selectCategory),
+                );
 
-            return RefreshIndicator(
-              key: _refreshKey,
-              onRefresh: _onRefresh,
-              edgeOffset: header.maxExtent,
-              color: AppColors.primary,
-              backgroundColor: AppColors.surface,
-              child: CustomScrollView(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: ClampingScrollPhysics(),
-                ),
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                slivers: [
-                  SliverPersistentHeader(pinned: true, delegate: header),
-                  const SliverToBoxAdapter(child: SizedBox(height: 28)),
-                  const SliverToBoxAdapter(
-                    child: SectionHeader(title: 'Shop by category'),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 10)),
-                  SliverToBoxAdapter(
-                    child: CategoryStrip(
-                      categories: state.categories,
-                      status: state.categoriesStatus,
-                      selectedSlug: state.query.isEmpty
-                          ? state.selectedCategory
-                          : '',
-                      onSelected: _selectCategory,
-                      onRetry: () =>
-                          context.read<DiscoverBloc>().add(DiscoverRetried()),
+                return RefreshIndicator(
+                  key: _refreshKey,
+                  onRefresh: _onRefresh,
+                  edgeOffset: header.maxExtent,
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.surface,
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: ClampingScrollPhysics(),
                     ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                  SliverToBoxAdapter(
-                    child: SectionHeader(
-                      title: 'Deals of the day',
-                      trailing: state.deals.isEmpty
-                          ? null
-                          : AisleChip(
-                              label:
-                                  'Up to ${state.deals.first.discountPercentage.round()}% off',
-                              foreground: AppColors.plum,
-                              background: AppColors.plumSoft,
-                            ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                  SliverToBoxAdapter(
-                    child: DealsStrip(
-                      deals: state.deals,
-                      status: state.dealsStatus,
-                      onDealTap: (product) =>
-                          _openProduct(product, 'deal-${product.id}'),
-                      onRetry: () =>
-                          context.read<DiscoverBloc>().add(DiscoverRetried()),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
-                  SliverToBoxAdapter(
-                    child: SectionHeader(
-                      title: _gridTitle(state),
-                      trailing: state.status == StatusIndicator.active
-                          ? Text(
-                              '${state.total}',
-                              style: textTheme.bodySmall!.copyWith(
-                                color: AppColors.inkTertiary,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    slivers: [
+                      SliverPersistentHeader(pinned: true, delegate: header),
+                      SliverToBoxAdapter(
+                        child: IgnorePointer(
+                          ignoring: _isSearching,
+                          child: SizeTransition(
+                            sizeFactor: _browseSections,
+                            alignment: Alignment.topLeft,
+                            child: FadeTransition(
+                              opacity: _browseSections,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 28),
+                                  const SectionHeader(
+                                    title: 'Shop by category',
+                                  ),
+                                  const SizedBox(height: 10),
+                                  CategoryStrip(
+                                    categories: state.categories,
+                                    status: state.categoriesStatus,
+                                    selectedSlug: state.query.isEmpty
+                                        ? state.selectedCategory
+                                        : '',
+                                    onSelected: _selectCategory,
+                                    onRetry: () => context
+                                        .read<DiscoverBloc>()
+                                        .add(DiscoverRetried()),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  SectionHeader(
+                                    title: 'Deals of the day',
+                                    trailing: state.deals.isEmpty
+                                        ? null
+                                        : AisleChip(
+                                            label:
+                                                'Up to ${state.deals.first.discountPercentage.round()}% off',
+                                            foreground: AppColors.plum,
+                                            background: AppColors.plumSoft,
+                                          ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  DealsStrip(
+                                    deals: state.deals,
+                                    status: state.dealsStatus,
+                                    onDealTap: (product) => _openProduct(
+                                      product,
+                                      'deal-${product.id}',
+                                    ),
+                                    onRetry: () => context
+                                        .read<DiscoverBloc>()
+                                        .add(DiscoverRetried()),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
                               ),
-                            )
-                          : null,
-                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                      SliverToBoxAdapter(
+                        child: SectionHeader(
+                          title: _gridTitle(state),
+                          trailing: state.status == StatusIndicator.active
+                              ? Text(
+                                  '${state.total}',
+                                  style: textTheme.bodySmall!.copyWith(
+                                    color: AppColors.inkTertiary,
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      ..._gridSlivers(state),
+                      SliverToBoxAdapter(
+                        child: SizedBox(height: padding.bottom + 16),
+                      ),
+                    ],
                   ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                  ..._gridSlivers(state),
-                  SliverToBoxAdapter(
-                    child: SizedBox(height: padding.bottom + 16),
-                  ),
-                ],
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
