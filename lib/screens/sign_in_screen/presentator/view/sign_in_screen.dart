@@ -212,10 +212,13 @@ class _SignInScreenState extends State<SignInScreen> {
                               color: AppColors.inkTertiary,
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              'Your session is encrypted and stored on this device.',
-                              style: textTheme.labelMedium!.copyWith(
-                                color: AppColors.inkTertiary,
+                            Flexible(
+                              child: Text(
+                                'Your session is encrypted and stored on this device.',
+                                textAlign: TextAlign.center,
+                                style: textTheme.labelMedium!.copyWith(
+                                  color: AppColors.inkTertiary,
+                                ),
                               ),
                             ),
                           ],
