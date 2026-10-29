@@ -2,7 +2,21 @@
 
 **Test login:** `emilys` / `emilyspass`
 
-**Run:** `flutter pub get`, then `flutter run`
+## How to run
+
+Needs Flutter 3.44 or newer. Check with `flutter --version`.
+
+```bash
+# 1. Download the packages
+flutter pub get
+
+# 2. Run on a connected phone or simulator
+flutter run
+
+# Optional: build an Android APK that installs on any phone
+flutter build apk --release
+# → build/app/outputs/flutter-apk/app-release.apk
+```
 
 ---
 
