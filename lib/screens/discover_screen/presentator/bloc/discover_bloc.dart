@@ -193,6 +193,9 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
               state.copyWith(
                 noticeMessage: failure.message,
                 noticeId: state.noticeId + 1,
+                pageStatus: state.pageStatus == StatusIndicator.loadingMore
+                    ? StatusIndicator.idle
+                    : null,
               ),
             );
           }
