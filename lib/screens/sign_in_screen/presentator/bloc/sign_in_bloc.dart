@@ -7,14 +7,18 @@ import 'package:test_store/core/services/navigator_service.dart';
 import 'package:test_store/core/services/secure_storage_service.dart';
 import 'package:test_store/screens/discover_screen/presentator/view/discover_screen.dart';
 import 'package:test_store/screens/sign_in_screen/data/models/sign_in_request_model.dart';
-import 'package:test_store/screens/sign_in_screen/data/repository/sign_in_remote_repo_impl.dart';
+import 'package:test_store/screens/sign_in_screen/domain/repository/sign_in_repository.dart';
 import 'package:test_store/screens/sign_in_screen/domain/usecases/sign_in_usecase.dart';
 
 part 'sign_in_event.dart';
 part 'sign_in_state.dart';
 
 class SignInBloc extends Bloc<SignInEvent, SignInState> {
-  SignInBloc() : super(const SignInState()) {
+  final SignInUseCase _signIn;
+
+  SignInBloc({required SignInRepository repository})
+    : _signIn = SignInUseCase(repository),
+      super(const SignInState()) {
     on<SignInRequested>(_onSignInRequested);
     on<SignInErrorCleared>(_onErrorCleared);
   }
@@ -29,7 +33,7 @@ class SignInBloc extends Bloc<SignInEvent, SignInState> {
       username: event.username.trim(),
       password: event.password,
     );
-    final result = await SignInUseCase(SignInRemoteRepoImpl()).execute(request);
+    final result = await _signIn.execute(request);
 
     await result.fold(
       onFailure: (failure) async {

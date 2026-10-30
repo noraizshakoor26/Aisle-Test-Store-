@@ -6,7 +6,7 @@ import 'package:test_store/core/enums/status_indicator.dart';
 import 'package:test_store/core/services/navigator_service.dart';
 import 'package:test_store/core/services/secure_storage_service.dart';
 import 'package:test_store/screens/discover_screen/presentator/view/discover_screen.dart';
-import 'package:test_store/screens/route_screen/data/repository/route_remote_repo_impl.dart';
+import 'package:test_store/screens/route_screen/domain/repository/route_repository.dart';
 import 'package:test_store/screens/route_screen/domain/usecases/get_me_usecase.dart';
 import 'package:test_store/screens/welcome_screen/presentator/view/welcome_screen.dart';
 
@@ -14,7 +14,11 @@ part 'route_event.dart';
 part 'route_state.dart';
 
 class RouteBloc extends Bloc<RouteEvent, RouteState> {
-  RouteBloc() : super(const RouteState()) {
+  final GetMeUseCase _getMe;
+
+  RouteBloc({required RouteRepository repository})
+    : _getMe = GetMeUseCase(repository),
+      super(const RouteState()) {
     on<RouteStarted>(_onStarted);
     on<RouteSignedOut>(_onSignedOut);
   }
@@ -36,7 +40,7 @@ class RouteBloc extends Bloc<RouteEvent, RouteState> {
       return;
     }
 
-    final result = await GetMeUseCase(RouteRemoteRepoImpl()).execute();
+    final result = await _getMe.execute();
     // Any HTTP answer other than 200 means the token is unusable: DummyJSON
     // returns 401 for expired tokens but 500 for malformed ones. Only failures
     // without a status code (offline, timeout) keep the saved session.
