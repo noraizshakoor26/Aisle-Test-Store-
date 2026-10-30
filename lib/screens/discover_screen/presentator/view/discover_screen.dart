@@ -141,11 +141,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     context.read<DiscoverBloc>().add(DiscoverCategorySelected(slug));
   }
 
-  Future<void> _onRefresh() {
+  Future<void> _onRefresh() async {
     HapticFeedback.selectionClick();
     final completer = Completer<void>();
     context.read<DiscoverBloc>().add(DiscoverRefreshed(completer));
-    return completer.future;
+    await completer.future;
+    if (mounted && _scrollController.hasClients) _onScroll();
   }
 
   void _openProduct(ProductModel product, String heroTag) {

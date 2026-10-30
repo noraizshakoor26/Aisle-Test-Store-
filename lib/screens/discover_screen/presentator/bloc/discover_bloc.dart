@@ -29,6 +29,7 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
   // Bumped on every grid reset, so a slow response for an older search or
   // category can never overwrite the grid the user is now looking at.
   int _gridRequestId = 0;
+  int? _refreshRequestId;
 
   DiscoverBloc({required DiscoverRepository repository})
     : _getProducts = GetProductsUseCase(repository),
@@ -149,6 +150,7 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
     Emitter<DiscoverState> emit,
   ) async {
     final requestId = ++_gridRequestId;
+    _refreshRequestId = requestId;
     final query = state.query;
     final category = state.selectedCategory;
 
@@ -157,6 +159,7 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
       _getCategories.execute(),
       _getDeals.execute(limit: _dealsLimit),
     ]);
+    if (_refreshRequestId == requestId) _refreshRequestId = null;
     final pageResult = results[0] as Result<ProductsResponseModel>;
     final categoriesResult = results[1] as Result<List<CategoryModel>>;
     final dealsResult = results[2] as Result<List<ProductModel>>;
@@ -236,6 +239,7 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
         state.status != StatusIndicator.active ||
         state.pageStatus == StatusIndicator.loadingMore ||
         state.hasReachedEnd ||
+        _refreshRequestId == _gridRequestId ||
         (state.pageStatus == StatusIndicator.failed && !event.isRetry);
     if (blocked) return;
 
